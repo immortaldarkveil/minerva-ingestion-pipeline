@@ -120,7 +120,7 @@ Result: `7 success, 3 rejected`
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/immortaldarkveil/minerva-ingestion-pipeline?quickstart=1) — Wait for `postCreate` to finish (`python run_demo.py` runs automatically), then **Ports → 8000 → Open in Browser**.
 
 **Option B — Live demo (Vercel):**  
-**https://minerva-ingestion-pipeline.vercel.app** — no install, no clone. Upload a CSV/JSON and see the review queue, journal, and trial balance instantly. Every push to `main` deploys a preview via Vercel.
+**https://minerva-ingestion-pipeline-three.vercel.app** — no install, no clone. Upload a CSV/JSON and see the review queue, journal, and trial balance instantly. Every push to `main` and PR gets a preview URL via Vercel (connected to this repo).
 
 Deployed via `vercel.json` (`api/index.py` → `@vercel/python`). For your own host:
 ```bash
