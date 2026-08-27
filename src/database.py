@@ -13,8 +13,13 @@ from typing import Optional
 
 from .models import CHART_OF_ACCOUNTS_SEED, NormalizedTransaction
 
+import os
 
-DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "ledger.db"
+# Vercel has read-only filesystem except /tmp — use /tmp for SQLite in production
+if os.getenv("VERCEL"):
+    DEFAULT_DB_PATH = Path("/tmp/ledger.db")
+else:
+    DEFAULT_DB_PATH = Path(__file__).parent.parent / "data" / "ledger.db"
 
 # Schema mirrors a real accounting ledger: strict types, constraints, audit columns
 DDL_TRANSACTIONS = """
