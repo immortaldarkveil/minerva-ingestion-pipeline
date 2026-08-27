@@ -1,0 +1,75 @@
+[
+  {
+    "date": "2023-01-10",
+    "desc": "Taxi - Heathrow to office",
+    "amount": "£ 45.60",
+    "currency": "GBP",
+    "merchant": "Black Cab Co",
+    "category": "Travel"
+  },
+  {
+    "Transaction Date": "10/01/2023",
+    "Transaction Amount": "$ 120.00 ",
+    "Details": "  Hotel - Premier Inn   ",
+    "curr": "USD",
+    "vendor": "Premier Inn",
+    "type": "Travel"
+  },
+  {
+    "when": "Jan 12th 2023",
+    "what": "CafÃ© lunch - Soho",
+    "sum": "€ 22,50",
+    "ccy": "€",
+    "store": "CafÃ© Soho",
+    "tag": "Meals"
+  },
+  {
+    "booking date": "2023/01/13",
+    "total": "(55.00)",
+    "memo": "Refund - cancelled order",
+    "Currency Code": "USD",
+    "counterparty": "Amazon",
+    "ledger": "Refunds",
+    "ref": "REF-JSON-01"
+  },
+  {
+    "dated": "13-01-2023",
+    "amt": "N/A",
+    "narrative": "Broken row - missing amount",
+    "curr code": "USD"
+  },
+  {
+    "date": "31/02/2023",
+    "amount": "$10.00",
+    "description": "Impossible date"
+  },
+  {
+    "transaction_date": "2023-01-14",
+    "amount": "$0",
+    "description": "Zero amount - should fail validation"
+  },
+  {
+    "Date": " 2023-01-15 ",
+    "Amount": " $ 999.99 ",
+    "Desc": "  Consulting - acme   ",
+    "Currency": " ",
+    "Merchant": " Acme Corp ",
+    "Category": " Services "
+  },
+  {
+    "txn date": "15/01/2023",
+    "txn id": "JSON-009",
+    "particulars": "Duplicate hotel from CSV",
+    "value": "$1,234.56",
+    "merchant name": "Staples",
+    "curr": "USD"
+  },
+  {
+    "value date": "2023-02-05",
+    "price": "¥ 15000",
+    "info": "Japan expense - Tokyo office",
+    "ccy": "JPY",
+    "beneficiary": "Tokyo Office",
+    "class": "Office"
+  }
+]

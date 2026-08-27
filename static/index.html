@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingestion Control</title>
+<style>
+  :root { --bg:#0f1115; --panel:#1a1d23; --border:#2a2f3a; --text:#e6e8eb; --muted:#9aa0a6; --accent:#6ee7b7; --warn:#fbbf24; --err:#f87171; --blue:#60a5fa; }
+  * { box-sizing:border-box } body{ margin:0; font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text); }
+  header{ padding:28px 32px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap }
+  header h1{ margin:0; font-size:20px; letter-spacing:-0.02em } header h1 span{ color:var(--accent) } header p{ margin:4px 0 0; color:var(--muted); font-size:13px }
+  .pill{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--muted) }
+  .pill.ok{ border-color:#14532d; color:var(--accent); background:#0b2e1a }
+  .pill.err{ border-color:#7f1d1d; color:var(--err); background:#2a1212 }
+  .wrap{ max-width:1180px; margin:0 auto; padding:24px 32px 40px }
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0 24px }
+  @media(max-width:900px){ .grid{ grid-template-columns:repeat(2,1fr)} }
+  .card{ background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px }
+  .card h3{ margin:0; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted) }
+  .card .v{ font-size:24px; font-weight:700; margin:6px 0 2px } .card .s{ font-size:12px; color:var(--muted) }
+  .card.balanced .v{ color:var(--accent) } .card.unbalanced .v{ color:var(--err) }
+  .toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:18px 0 }
+  .btn{ appearance:none; border:1px solid var(--border); background:var(--panel); color:var(--text); padding:8px 12px; border-radius:8px; font-size:13px; cursor:pointer }
+  .btn.primary{ background:var(--text); color:var(--bg); border-color:var(--text); font-weight:600 }
+  .btn:disabled{ opacity:.5; cursor:not-allowed }
+  .tabs{ display:flex; gap:6px; border-bottom:1px solid var(--border); margin:20px 0 0; overflow:auto }
+  .tab{ padding:10px 14px; font-size:13px; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap }
+  .tab.active{ color:var(--text); border-color:var(--accent); font-weight:600 }
+  .panel{ display:none; margin-top:18px } .panel.active{ display:block }
+  table{ width:100%; border-collapse:collapse; font-size:13px }
+  th{ text-align:left; color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.06em; padding:8px 10px; border-bottom:1px solid var(--border) }
+  td{ padding:10px; border-bottom:1px solid #1f232b; vertical-align:top }
+  tr:hover td{ background:#151821 }
+  .badge{ font-size:11px; padding:2px 6px; border-radius:999px; border:1px solid var(--border) }
+  .b-warn{ background:#2a2310; color:var(--warn); border-color:#5a4510 }
+  .b-ok{ background:#0b2e1a; color:var(--accent); border-color:#14532d }
+  .b-err{ background:#2a1212; color:var(--err); border-color:#7f1d1d }
+  .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px }
+  .muted{ color:var(--muted) } .small{ font-size:12px }
+  .drop{ border:1.5px dashed var(--border); border-radius:12px; padding:22px; text-align:center; background:var(--panel) }
+  .drop.dragover{ border-color:var(--accent); background:#0f1f17 }
+  pre{ background:#0b0d11; border:1px solid var(--border); border-radius:10px; padding:14px; overflow:auto; font-size:12px }
+  a{ color:var(--blue); text-decoration:none } a:hover{ text-decoration:underline }
+  .row-actions{ display:flex; gap:6px }
+  .row-actions .btn{ padding:5px 8px; font-size:12px }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Ingestion <span>Control</span></h1>
+    <p>Double-entry • Categorization • Review queue • Trial-balanced</p>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center">
+    <span class="pill" id="healthPill">checking…</span>
+    <a class="btn small" href="/docs" target="_blank">API Docs</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid" id="statsGrid">
+    <div class="card"><h3>Transactions</h3><div class="v" id="sTx">—</div><div class="s"><span id="sNeeds">—</span> need review</div></div>
+    <div class="card"><h3>Review queue</h3><div class="v" id="sRej">—</div><div class="s"><span id="sPend">—</span> pending</div></div>
+    <div class="card" id="tbCard"><h3>Trial balance</h3><div class="v" id="sTb">—</div><div class="s" id="sTbSub">—</div></div>
+    <div class="card"><h3>Ledger</h3><div class="v" id="sBal">—</div><div class="s">debit = credit</div></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:10px">Ingest new file</h3>
+    <div class="drop" id="drop">
+      <div style="font-weight:600">Drop CSV / JSON here or click to browse</div>
+      <div class="muted small" style="margin-top:6px">Mismatched headers, Mojibake, EU amounts — handled. Rejections go to review queue, not crash.</div>
+      <input type="file" id="fileInput" accept=".csv,.json" style="display:none">
+      <div style="margin-top:14px"><button class="btn primary" id="browseBtn">Browse file</button> <span id="ingestStatus" class="small muted"></span></div>
+    </div>
+    <div id="lastIngest" style="margin-top:12px; display:none" class="small"></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-panel="rejected">Review queue <span id="tabRejCount" class="muted"></span></div>
+    <div class="tab" data-panel="transactions">Transactions</div>
+    <div class="tab" data-panel="journal">Journal (double-entry)</div>
+    <div class="tab" data-panel="trial">Trial balance</div>
+  </div>
+
+  <div class="panel active" id="panel-rejected">
+    <div class="toolbar">
+      <button class="btn" id="filterPending">Pending</button>
+      <button class="btn" id="filterAll">All</button>
+      <span class="small muted" id="rejHint"></span>
+      <span style="margin-left:auto" class="small muted">Auto-refreshes after ingest</span>
+    </div>
+    <div style="overflow:auto; border:1px solid var(--border); border-radius:12px">
+      <table id="rejTable">
+        <thead><tr><th>ID</th><th>Source</th><th>Raw</th><th>Error</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="rejBody"><tr><td colspan="6" class="muted" style="text-align:center; padding:24px">loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-transactions">
+    <div class="toolbar">
+      <label class="small"><input type="checkbox" id="onlyReview"> Only needs review</label>
+      <button class="btn" id="refreshTx">Refresh</button>
+      <a class="btn" href="/transactions" target="_blank">Raw JSON</a>
+    </div>
+    <div style="overflow:auto; border:1px solid var(--border); border-radius:12px">
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Curr</th><th>Category → GL</th><th>LLM</th><th>Review</th></tr></thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-journal">
+    <div class="toolbar"><button class="btn" id="refreshJournal">Refresh</button><a class="btn" href="/journal" target="_blank">Raw JSON</a></div>
+    <div id="journalList" class="small"></div>
+  </div>
+
+  <div class="panel" id="panel-trial">
+    <div id="trialBox"></div>
+  </div>
+
+  <div class="card" style="margin-top:22px">
+    <h3>Implementation notes</h3>
+    <ul class="small muted" style="line-height:1.7; margin:10px 0 0 18px">
+      <li><b style="color:var(--text)">Double-entry invariant:</b> every transaction creates 2 balanced lines (debit = credit). Trial balance is checked after each ingestion.</li>
+      <li><b style="color:var(--text)">Categorization:</b> heuristic model with confidence and reasoning; low-confidence rows flagged <span class="badge b-warn">needs review</span> instead of auto-posted.</li>
+      <li><b style="color:var(--text)">Fuzzy dedupe:</b> flags <span class="mono">same amount ±3 days + 82% description similarity</span> for review.</li>
+      <li><b style="color:var(--text)">Review queue:</b> rejected rows persist to DB, not logs. Resolve or dismiss in the UI.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const rejBody = $('#rejBody'), txBody = $('#txBody'), journalList = $('#journalList'), trialBox = $('#trialBox');
+
+async function jget(url){ const r=await fetch(url); if(!r.ok) throw new Error(r.status); return r.json(); }
+
+async function refreshHealth(){
+  try{ const h=await jget('/health'); $('#healthPill').textContent='● live v'+h.version; $('#healthPill').className='pill ok'; } catch{ $('#healthPill').textContent='● offline'; $('#healthPill').className='pill err'; }
+}
+async function refreshStats(){
+  const s=await jget('/stats');
+  $('#sTx').textContent=s.transactions_total;
+  $('#sNeeds').textContent=s.transactions_needs_review;
+  $('#sRej').textContent=s.rejected_total;
+  $('#sPend').textContent=s.rejected_pending;
+  const tb = s.trial_balanced ? 'balanced ✓' : 'NOT balanced';
+  $('#sTb').textContent=tb;
+  $('#sTbSub').textContent=`D ${s.trial_totals.debit} / C ${s.trial_totals.credit}`;
+  $('#tbCard').className='card '+(s.trial_balanced?'balanced':'unbalanced');
+  $('#sBal').textContent=s.trial_balanced ? '✓' : '✗';
+}
+async function refreshRejected(status='pending'){
+  const d=await jget('/rejected?status='+status);
+  $('#tabRejCount').textContent=`(${d.total})`;
+  $('#rejHint').textContent = status==='pending' ? `${d.total} pending` : `${d.total} total`;
+  if(!d.data.length){ rejBody.innerHTML=`<tr><td colspan="6" class="muted" style="text-align:center; padding:24px">no ${status} rows</td></tr>`; return; }
+  rejBody.innerHTML = d.data.map(r=>{
+    const raw = typeof r.raw_data==='object' ? JSON.stringify(r.raw_data).slice(0,120) : String(r.raw_data).slice(0,120);
+    const badge = r.status==='pending'?'b-warn': r.status==='resolved'?'b-ok':'b-err';
+    return `<tr>
+      <td class="mono">${r.id}</td>
+      <td><div class="mono">${r.source_file}</div><div class="muted small">row ${r.source_row}</div></td>
+      <td><div class="mono small" title='${JSON.stringify(r.raw_data)}'>${raw}…</div><div class="muted small">${Object.keys(r.field_errors||{}).join(', ')}</div></td>
+      <td><div class="small" style="max-width:320px; white-space:pre-wrap">${r.error_message}</div><div class="badge ${r.error_type==='validation'?'b-err':'b-warn'}" style="margin-top:4px; display:inline-block">${r.error_type}</div></td>
+      <td><span class="badge ${badge}">${r.status}</span></td>
+      <td>${r.status==='pending' ? `<div class="row-actions"><button class="btn" onclick="resolveRej(${r.id},'resolved')">Resolve</button><button class="btn" onclick="resolveRej(${r.id},'dismissed')">Dismiss</button></div>` : `<span class="muted small">${r.resolution_note||''}</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+async function resolveRej(id, status){
+  await fetch(`/rejected/${id}/resolve?status=${status}&note=${encodeURIComponent(status+' via UI')}`, {method:'POST'});
+  refreshRejected($('#filterPending').classList.contains('primary') ? 'pending' : 'all');
+  refreshStats();
+}
+async function refreshTx(){
+  const only = $('#onlyReview').checked ? '&needs_review=true' : '';
+  const d=await jget('/transactions?limit=100&offset=0'+only);
+  if(!d.data.length){ txBody.innerHTML=`<tr><td colspan="7" class="muted" style="text-align:center;padding:20px">no transactions</td></tr>`; return; }
+  txBody.innerHTML = d.data.map(t=>{
+    const needs = t.needs_review ? '<span class="badge b-warn">needs review</span>' : '<span class="badge b-ok">ok</span>';
+    const llm = t.llm_category ? `${t.llm_category} <span class="muted">(${Math.round((t.llm_confidence||0)*100)}%)</span><div class="muted small">${t.llm_reasoning||''}</div>` : '<span class="muted">—</span>';
+    const gl = t.gl_account_code ? `${t.gl_account_code}` : '—';
+    const cat = t.category || t.llm_category || '—';
+    return `<tr>
+      <td class="mono">${t.transaction_date}</td>
+      <td><div>${t.description}</div><div class="muted small">${t.merchant||''}</div></td>
+      <td class="mono">${t.amount}</td>
+      <td>${t.currency}</td>
+      <td><span class="mono">${cat}</span> <span class="muted">→</span> <span class="badge b-ok">${gl}</span></td>
+      <td class="small">${llm}</td>
+      <td>${needs}</td>
+    </tr>`;
+  }).join('');
+}
+async function refreshJournal(){
+  const d=await jget('/journal');
+  if(!d.data.length){ journalList.innerHTML='<div class="muted" style="padding:16px">no journal entries yet — ingest a file</div>'; return; }
+  journalList.innerHTML = d.data.map(e=>{
+    const lines = (e.lines||[]).map(l=> `<tr><td class="mono">${l.account_code} ${l.account_name}</td><td class="mono">${l.debit!=='0.00'?l.debit:''}</td><td class="mono">${l.credit!=='0.00'?l.credit:''}</td><td>${l.currency}</td></tr>`).join('');
+    return `<div style="border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:12px">
+      <div style="padding:10px 12px; background:#151821; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap">
+        <div><b>#${e.id}</b> — ${e.entry_date} — ${e.description} <span class="muted">(${e.currency} ${e.amount})</span></div>
+        <div class="mono muted small">${e.source_file} row ${e.source_row} → tx ${e.transaction_id}</div>
+      </div>
+      <table><thead><tr><th>Account</th><th>Debit</th><th>Credit</th><th>Curr</th></tr></thead><tbody>${lines}</tbody></table>
+    </div>`;
+  }).join('');
+}
+async function refreshTrial(){
+  const tb=await jget('/trial-balance');
+  const rows = tb.accounts.map(a=> `<tr><td class="mono">${a.account_code}</td><td>${a.name}</td><td class="mono">${a.type}</td><td class="mono">${Number(a.total_debit).toFixed(2)}</td><td class="mono">${Number(a.total_credit).toFixed(2)}</td></tr>`).join('');
+  trialBox.innerHTML = `
+    <div class="card" style="border-color:${tb.balanced?'#14532d':'#7f1d1d'}">
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap"><span class="pill ${tb.balanced?'ok':'err'}">${tb.balanced?'Balanced ✓':'Unbalanced ✗'}</span><span class="mono">Debit ${tb.total_debit.toFixed(2)} — Credit ${tb.total_credit.toFixed(2)}</span><span class="muted small">Balanced invariant checked after every ingestion</span></div>
+    </div>
+    <div style="overflow:auto; border:1px solid var(--border); border-radius:12px; margin-top:12px"><table><thead><tr><th>Code</th><th>Account</th><th>Type</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${rows}</tbody></table></div>
+  `;
+}
+
+// tabs
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    $('#panel-'+t.dataset.panel).classList.add('active');
+    if(t.dataset.panel==='transactions') refreshTx();
+    if(t.dataset.panel==='journal') refreshJournal();
+    if(t.dataset.panel==='trial') refreshTrial();
+    if(t.dataset.panel==='rejected') refreshRejected('pending');
+  });
+});
+
+// filters
+$('#filterPending').addEventListener('click', ()=> refreshRejected('pending'));
+$('#filterAll').addEventListener('click', ()=> refreshRejected('all'));
+$('#onlyReview').addEventListener('change', refreshTx);
+$('#refreshTx').addEventListener('click', refreshTx);
+$('#refreshJournal').addEventListener('click', refreshJournal);
+
+// upload
+const drop=$('#drop'), fileInput=$('#fileInput'), ingestStatus=$('#ingestStatus'), browseBtn=$('#browseBtn');
+browseBtn.addEventListener('click', ()=> fileInput.click());
+drop.addEventListener('click', (e)=>{ if(e.target===drop) fileInput.click(); });
+drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('dragover'); });
+drop.addEventListener('dragleave', ()=> drop.classList.remove('dragover'));
+drop.addEventListener('drop', e=>{ e.preventDefault(); drop.classList.remove('dragover'); const f=e.dataTransfer.files[0]; if(f) upload(f); });
+fileInput.addEventListener('change', ()=>{ const f=fileInput.files[0]; if(f) upload(f); });
+
+async function upload(file){
+  ingestStatus.textContent='uploading…';
+  const fd=new FormData(); fd.append('file', file);
+  try{
+    const r=await fetch('/ingest', {method:'POST', body:fd});
+    const j=await r.json();
+    if(!r.ok) throw new Error(j.detail||'failed');
+    ingestStatus.textContent=`✓ ${j.source_file}: ${j.successful} ok, ${j.rejected} rejected, ${j.duplicates_skipped} dup, ${j.fuzzy_flagged||0} fuzzy`;
+    $('#lastIngest').style.display='block';
+    $('#lastIngest').innerHTML=`<b>Last ingest</b>: ${j.source_file} — <span class="mono">${j.total_rows} rows → ${j.successful} success, ${j.rejected} rejected, ${j.fuzzy_flagged||0} fuzzy flagged, ${j.needs_review_count||0} needs review</span> — ${j.duration_seconds}s <a href="#" onclick="refreshAll(); return false" style="margin-left:8px">refresh views</a><pre style="margin-top:8px; max-height:180px">${JSON.stringify(j, null, 2).slice(0,2000)}</pre>`;
+    refreshAll();
+  } catch(e){ ingestStatus.textContent='✗ '+e.message; }
+}
+function refreshAll(){ refreshStats(); refreshRejected('pending'); refreshTx(); refreshJournal(); refreshTrial(); }
+refreshHealth(); refreshAll();
+setInterval(refreshHealth, 12000);
+window.resolveRej = resolveRej;
+</script>
+</body>
+</html>

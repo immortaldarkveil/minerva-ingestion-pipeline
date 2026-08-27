@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+
+# SQLite / DB
+data/ledger.db
+data/ledger.db-shm
+data/ledger.db-wal
+*.db-journal
+
+# Logs (regenerated via run_demo.py — keep clean_ledger.json as example if you want)
+logs/demo.log
+logs/result_*.json
+# Uncomment to ignore all logs: logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

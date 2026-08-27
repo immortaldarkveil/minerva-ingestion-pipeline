@@ -1,0 +1,27 @@
+ TransAction Date , AMOUNT ($) , Desc. , Currency , Merchant Name , Category , Ref 
+2023-01-15,"$1,234.56", Office supplies - Staples   , USD , Staples , Office , INV-001
+15/01/2023,"£2,500.00",Consulting fee - Acme Corp, GBP,Acme Corp, Services,INV-002
+01/15/2023,  45.20 ,  Coffee - CafÃ© Luna  , , CafÃ© Luna , Meals , 
+15-01-2023,"(123.45)",Refund - returned goods, USD,Amazon, Refunds,REF-003
+2023/01/20,"$ 3,000.00",  Software license   ,USD, Microsoft, Software, LIC-2023
+20.01.2023,"1.234,56",European invoice - Müller GmbH,€, Müller GmbH, Services, EU-001
+Jan 22 2023, 99.99, Lunch meeting - The Ivy, GBP, The Ivy, Meals,MEAL-22
+2023-01-22,"$1,234.56", Office supplies - Staples   , USD , Staples , Office , INV-001
+,,, , , , 
+2023-01-25,"$0.00", Zero amount test, USD, Test Vendor, Test, TEST-0
+31/02/2023, $100.00, Invalid date test, USD, Bad Date Co, Test, BAD-1
+2023-01-26, N/A, Missing amount test, USD, NoPay Inc, Test, BAD-2
+2099-12-01, $50.00, Far future date, USD, Future LLC, Test, FUT-01
+1890-01-01, $10.00, Ancient date, USD, Old Co, Test, OLD-01
+2023-01-27, $15000000.00, Absurdly large, USD, Big Corp, Test, BIG-01
+2023-01-28, $75.50, , USD, Starbucks, Meals, SB-01
+2023-01-29, $82.00, , , , , BAD-3
+03/04/2023, $200.00, Ambiguous date - intl client, USD, Intl Client, Services, AMB-01
+2023-01-30,"$1,000.00",  Bonus - Q1   , $, Google, Bonus, BONUS-1
+2023-01-31, £ 85.00, Pound symbol spaced, £, Tesco, Groceries, TESCO-1
+2023-02-01, 120.00, Dollar alias test, Dollar, Walmart, Groceries, WM-01
+2023-02-02,"$2,000.00", Duplicate with whitespace , USD ,  Dup Co  , Test , DUP-01
+2023-02-02,"$2,000.00",Duplicate with whitespace,USD,Dup Co,Test,DUP-01
+2023-02-03,"$  45.2 ",  Extra spaces amount  , USD,  Shell Gas  , Travel, GAS-01
+2023-02-04, $67.89,Normal row - should pass, USD, Clean Vendor, Office, CLEAN-01
+15/02/23, $33.33, Two digit year, USD, Quick Shop, Misc, QS-01
