@@ -119,20 +119,16 @@ Result: `7 success, 3 rejected`
 **Option A — Codespaces (1 click, no setup):**  
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/immortaldarkveil/minerva-ingestion-pipeline?quickstart=1) — Wait for `postCreate` to finish (`python run_demo.py` runs automatically), then **Ports → 8000 → Open in Browser**.
 
-**Option B — Deployed demo:**  
-If you have a hosted URL (Render/Railway/Fly), set `DEMO_URL` below. Otherwise the API runs wherever you deploy `Dockerfile` — it listens on `$PORT`:
+**Option B — Live demo (Vercel):**  
+**https://minerva-ingestion-pipeline.vercel.app** — no install, no clone. Upload a CSV/JSON and see the review queue, journal, and trial balance instantly. Every push to `main` deploys a preview via Vercel.
+
+Deployed via `vercel.json` (`api/index.py` → `@vercel/python`). For your own host:
 ```bash
 docker build -t ingestion .
 docker run -p 8000:8000 ingestion
 # → http://localhost:8000/ (upload, Transactions, Journal, Trial Balance, Review Queue)
 ```
-
-Deploy button (Render):
-```yaml
-# render.yaml is included — connect the repo to Render → New Web Service → Free
-# Build: pip install -r requirements.txt
-# Start: uvicorn src.api:app --host 0.0.0.0 --port $PORT
-```
+`render.yaml` is included for Render one-click.
 
 ## Run locally
 
