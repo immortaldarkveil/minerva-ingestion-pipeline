@@ -25,9 +25,16 @@ from .database import (
     fetch_rejected,
     fetch_trial_balance,
     get_connection,
+    init_db,
     resolve_rejected,
 )
 from .pipeline import run_pipeline
+
+# Ensure DB and chart are ready (important for Vercel's ephemeral /tmp)
+try:
+    init_db()
+except Exception:
+    pass
 
 app = FastAPI(
     title="Ingestion API",
