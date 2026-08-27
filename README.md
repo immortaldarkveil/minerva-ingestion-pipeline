@@ -4,7 +4,7 @@ Robust backend for ingesting erratic SMB financial data — mismatched CSV heade
 
 Built with **Python, Pandas, Pydantic v2, SQLite (Postgres-compatible), FastAPI**. Demo runs in under 5 seconds and maintains a balanced trial balance.
 
-Live UI: `uvicorn src.api:app --reload` → http://localhost:8000/
+Try it without cloning — one click, no local setup. Local fallback documented below.
 
 ---
 
@@ -114,7 +114,27 @@ Result: `7 success, 3 rejected`
 
 ---
 
-## How to run
+## Try without installing
+
+**Option A — Codespaces (1 click, no setup):**  
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/immortaldarkveil/minerva-ingestion-pipeline?quickstart=1) — Wait for `postCreate` to finish (`python run_demo.py` runs automatically), then **Ports → 8000 → Open in Browser**.
+
+**Option B — Deployed demo:**  
+If you have a hosted URL (Render/Railway/Fly), set `DEMO_URL` below. Otherwise the API runs wherever you deploy `Dockerfile` — it listens on `$PORT`:
+```bash
+docker build -t ingestion .
+docker run -p 8000:8000 ingestion
+# → http://localhost:8000/ (upload, Transactions, Journal, Trial Balance, Review Queue)
+```
+
+Deploy button (Render):
+```yaml
+# render.yaml is included — connect the repo to Render → New Web Service → Free
+# Build: pip install -r requirements.txt
+# Start: uvicorn src.api:app --host 0.0.0.0 --port $PORT
+```
+
+## Run locally
 
 ```bash
 # 1. Install
@@ -131,21 +151,22 @@ uvicorn src.api:app --reload
 # → http://localhost:8000/health     (health)
 ```
 
-**API examples:**
+**API examples** (replace `http://localhost:8000` with your deployed URL if using a host):
 ```bash
+BASE="http://localhost:8000"  # or https://your-app.onrender.com
 # Upload
-curl -F "file=@data/dirty_transactions.csv" http://localhost:8000/ingest | jq
+curl -F "file=@data/dirty_transactions.csv" $BASE/ingest | jq
 # Ledger (only needs review)
-curl "http://localhost:8000/transactions?needs_review=true" | jq
+curl "$BASE/transactions?needs_review=true" | jq
 # Journal (double-entry)
-curl http://localhost:8000/journal | jq
+curl $BASE/journal | jq
 # Trial balance (must be balanced)
-curl http://localhost:8000/trial-balance | jq
+curl $BASE/trial-balance | jq
 # Review queue
-curl http://localhost:8000/rejected?status=pending | jq
-curl -X POST "http://localhost:8000/rejected/1/resolve?status=resolved&note=fixed%20date"
+curl "$BASE/rejected?status=pending" | jq
+curl -X POST "$BASE/rejected/1/resolve?status=resolved&note=fixed%20date"
 # Stats
-curl http://localhost:8000/stats | jq
+curl $BASE/stats | jq
 ```
 
 Inspect DB directly:
